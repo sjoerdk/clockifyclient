@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import datetime
+from unittest.mock import Mock
 
 import pytest
 
-from clockifyclient.api import APIServer, APIServerException
-from clockifyclient.client import ClockifyAPI
-from clockifyclient.models import TimeEntry, ProjectStub, Project, Workspace
+from clockifyclient.api import APIServer, APIServerException, APIErrorResponse
+from clockifyclient.client import ClockifyAPI, APISession
+from clockifyclient.models import TimeEntry, ProjectStub, Project, Workspace, User
 from tests.factories import ClockifyMockResponses
 
 
@@ -26,8 +27,36 @@ def a_workspace():
 
 
 @pytest.fixture()
+def a_user():
+    return User(obj_id='1232356', name='testuser')
+
+
+@pytest.fixture()
 def an_api(a_server):
     return ClockifyAPI(api_server=a_server)
+
+
+@pytest.fixture()
+def a_time_entry(a_project):
+    return TimeEntry(obj_id=None,
+                     start=datetime.datetime(year=2019, month=10, day=12, hour=14, minute=10, second=1),
+                     description='test description',
+                     project=a_project)
+
+
+@pytest.fixture()
+def a_mock_api(mock_requests, an_api, a_project, a_user, a_workspace, a_time_entry):
+    """A ClockifyAPI that just returns default objects for all methods, not calling any server
+
+    """
+
+    mock_api = Mock(spec=ClockifyAPI)
+    mock_api.get_projects.return_value = [a_project]
+    mock_api.get_user.return_value = a_user
+    mock_api.get_workspaces.return_value = [a_workspace]
+    mock_api.add_time_entry.return_value = a_time_entry
+    mock_api.set_active_time_entry_end.return_value = a_time_entry
+    return mock_api
 
 
 def test_api_calls_get(mock_requests, an_api):
@@ -50,13 +79,37 @@ def test_api_calls_get(mock_requests, an_api):
     assert projects[1].obj_id == '234567'
 
 
-def test_api_add_time_entry(mock_requests, an_api, a_workspace, a_project):
+def test_api_add_time_entry(mock_requests, an_api, a_workspace, a_time_entry):
     mock_requests.set_response(ClockifyMockResponses.POST_TIME_ENTRY)
-    a_time_entry = TimeEntry(obj_id=None,
-                             start=datetime.datetime(year=2019, month=10, day=12, hour=14, minute=10, second=1),
-                             description='test description',
-                             project=a_project)
 
     # should not raise exceptions. Not much else to check with these mocks
     an_api.add_time_entry(api_key='mock_key', workspace=a_workspace, time_entry=a_time_entry)
 
+
+def test_set_active_time_entry_end(mock_requests, an_api, a_workspace, a_user, a_date):
+    mock_requests.set_response(ClockifyMockResponses.POST_TIME_ENTRY)
+    response = an_api.set_active_time_entry_end(api_key='test', workspace=a_workspace, user=a_user, end_time=a_date)
+    assert response is not None
+
+    # if there is no currently running entry
+    mock_requests.set_response(ClockifyMockResponses.CURRENTLY_RUNNING_ENTRY_NOT_FOUND)
+    response = an_api.set_active_time_entry_end(api_key='test', workspace=a_workspace, user=a_user, end_time=a_date)
+    assert response is None
+
+
+def test_session(mock_requests, a_mock_api):
+    """Run some session commands with a mocked underlying API"""
+    session = APISession(api_server=an_api, api_key='test')
+    session.api = a_mock_api
+    session.add_time_entry(start_time=None, description='test', project=None)
+    session.stop_timer()
+
+
+def test_session_exception(mock_requests, a_mock_api):
+    session = APISession(api_server=an_api, api_key='test')
+    session.api = a_mock_api
+    session.api.get_workspaces.side_effect = APIServerException('Something went wrong with the API',
+                                                          error_response=APIErrorResponse(code=999,
+                                                                                          message='mock error'))
+    with pytest.raises(APIServerException):
+        session.add_time_entry(start_time=None, description='test', project=None)

@@ -6,10 +6,31 @@ import datetime
 from clockifyclient.exceptions import ClockifyClientException
 
 
-class APIObject:
-    """An object that can be returned by the clockify API"""
+class ClockifyDatetime:
 
     date_string_format = "%Y-%m-%dT%H:%M:%SZ"
+
+    """For converting between python datetime and clockify datetime string"""
+    def __init__(self, datetime):
+        """
+
+        Parameters
+        ----------
+        datetime: datetime
+            set this date time
+        """
+        self.datetime = datetime
+
+    @classmethod
+    def init_from_string(cls, clockify_date_string):
+        return cls(datetime=datetime.datetime.strptime(clockify_date_string, cls.date_string_format))
+
+    def __str__(self):
+        return datetime.datetime.strftime(self.datetime, self.date_string_format)
+
+
+class APIObject:
+    """An object that can be returned by the clockify API"""
 
     def __init__(self, obj_id):
         """
@@ -23,18 +44,6 @@ class APIObject:
 
     def __str__(self):
         return f"API object {self.obj_id}"
-
-    @classmethod
-    def to_datetime(cls, clickify_date_string: str):
-        if not clickify_date_string: # for convenience when casting optional params
-            return None
-        return datetime.datetime.strptime(clickify_date_string, cls.date_string_format)
-
-    @classmethod
-    def to_date_string(cls, datetime_in: datetime):
-        if not datetime_in:  # for convenience when casting optional params
-            return None
-        return datetime_in.strftime(cls.date_string_format)
 
     @classmethod
     def get_item(cls, dict_in, key, raise_error=True):
@@ -95,8 +104,10 @@ class APIObject:
             If item not found and raise_error is True
         """
         date_str = cls.get_item(dict_in, key, raise_error=raise_error)
+        if not date_str:
+            return None
         try:
-            return cls.to_datetime(date_str)
+            return ClockifyDatetime.init_from_string(date_str).datetime
         except ValueError as e:
             msg = f"Error parsing {date_str} to datetime: '{e}'"
             raise ObjectParseException(msg)
@@ -174,7 +185,7 @@ class ProjectStub(Project):
 
 class TimeEntry(APIObject):
 
-    def __init__(self, obj_id, start, description=None, project=None, end=None):
+    def __init__(self, obj_id, start, description='', project=None, end=None):
         """
 
         Parameters
@@ -184,7 +195,7 @@ class TimeEntry(APIObject):
         start: DateTime
             Start of time entry
         description: str, optional
-            Human readable description of this time entry. Defaults to None, meaning no description
+            Human readable description of this time entry. Defaults to empty string
         project: Project, optional
             Project associated with this entry. Defaults to None
         end: DateTime, optional
@@ -196,8 +207,15 @@ class TimeEntry(APIObject):
         self.project = project
         self.end = end
 
+    @staticmethod
+    def truncate(msg, length=30):
+        if msg[(length):]:
+            return msg[:(length-3)] + "..."
+        else:
+            return msg
+
     def __str__(self):
-        return f"TimeEntry ({self.obj_id})"
+        return f"TimeEntry ({self.obj_id}) - '{self.truncate(self.description)}'"
 
     @classmethod
     def init_from_dict(cls, dict_in):
@@ -211,6 +229,8 @@ class TimeEntry(APIObject):
         project_id = cls.get_item(dict_in=dict_in, key='projectId', raise_error=False)
         if project_id:
             project = ProjectStub(obj_id=project_id)
+        else:
+            project = None
         end = cls.get_datetime(dict_in=interval, key='end', raise_error=False)
 
         return cls(obj_id=obj_id,
@@ -223,11 +243,13 @@ class TimeEntry(APIObject):
     def to_dict(self):
         """As dict that can be sent to API"""
         as_dict = {"id": self.obj_id,
-                   "start": self.to_date_string(self.start),
-                   "description": self.description,
-                   "projectId": self.project.obj_id,
-                   "end": self.to_date_string(self.end),
+                   "start": str(ClockifyDatetime(self.start)),
+                   "description": self.description
                    }
+        if self.end:
+            as_dict["end"] = str(ClockifyDatetime(self.end))
+        if self.project:
+            as_dict["projectId"] = self.project.obj_id
 
         return {x: y for x, y in as_dict.items() if y}  # remove items with None value
 

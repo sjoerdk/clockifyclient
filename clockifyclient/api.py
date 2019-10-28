@@ -1,13 +1,20 @@
 """Models the clockify API. Tries to stay close to the actual endpoints.
 This layer is the only one that should do actual http queries
 """
+from json.decoder import JSONDecodeError
+
 import requests
 
+from clockifyclient.decorators import except_connection_error
 from clockifyclient.exceptions import ClockifyClientException
 
 
 class APIServer:
     """Models a clockify API server. Basic HTTP interaction. Returns json and raises exceptions
+
+    Notes
+    -----
+    For higher level interactions, see client.ClockifyAPI
     """
 
     def __init__(self, url):
@@ -20,7 +27,8 @@ class APIServer:
         """
         self.url = url
 
-    def get(self, path, api_key):
+    @except_connection_error
+    def get(self, path, api_key, params=None):
         """
 
         Parameters
@@ -29,6 +37,8 @@ class APIServer:
             relative path to endpoint. Like '/user' or '/workspaces'
         api_key: str
             api key to send with request
+        params: Dict, optional
+            Request parameters to send. Defaults to empty list
 
         Returns
         -------
@@ -36,13 +46,16 @@ class APIServer:
             Json-interpreted response from server
 
         """
+        if not params:
+            params = {}
         response_raw = requests.get(
             self.url + path,
             headers={"X-Api-key": api_key, "content-type": "application/json"},
+            params=params
         )
-        self.interpret_raw_response(response_raw)
-        return response_raw.json()
+        return APIRawResponse(response_raw).parse()
 
+    @except_connection_error
     def post(self, path, api_key, data):
         """
 
@@ -66,38 +79,172 @@ class APIServer:
             headers={"X-Api-key": api_key, "content-type": "application/json"},
             json=data
         )
-        self.interpret_raw_response(response_raw)
-        return response_raw.json()
+        return APIRawResponse(response_raw).parse()
 
-    @staticmethod
-    def interpret_raw_response(response):
-        """Check HTTP response and throw helpful python exception if needed.
-
-        Will raise errors for any response code other than 200(OK) or 201(Created)
+    @except_connection_error
+    def put(self, path, api_key, data):
+        """
 
         Parameters
         ----------
-        response: :obj:`requests.models.Response`
-            A response such as it is returned by the python requests library
+        path: str
+            relative path to endpoint. Like '/user' or '/workspaces'
+        api_key: str
+            api key to send with request
+        data: Dict
+            data to send as json
 
         Returns
         -------
-            Nothing
+        Dict or List:
+            Json-interpreted response from server
+
+        """
+        response_raw = requests.put(
+            self.url + path,
+            headers={"X-Api-key": api_key, "content-type": "application/json"},
+            json=data
+        )
+        return APIRawResponse(response_raw).parse()
+
+    @except_connection_error
+    def patch(self, path, api_key, data):
+        """
+
+        Parameters
+        ----------
+        path: str
+            relative path to endpoint. Like '/user' or '/workspaces'
+        api_key: str
+            api key to send with request
+        data: Dict
+            data to send as json
+
+        Returns
+        -------
+        Dict or List:
+            Json-interpreted response from server
+
+        """
+        response_raw = requests.patch(
+            self.url + path,
+            headers={"X-Api-key": api_key, "content-type": "application/json"},
+            json=data
+        )
+        return APIRawResponse(response_raw).parse()
+
+
+class APIRawResponse:
+
+    def __init__(self, raw_response):
+        """A response as received from an API server
+
+        Parameters
+        ----------
+        raw_response: requests response
+        """
+        self.raw_response = raw_response
+
+    def parse(self):
+        """Return API response as dict. If the response encodes an API error, raise Exception
 
         Raises
         ------
-        APIServerException:
-            When anything goes wrong
+        APIServer404:
+            When the raw response describes an API code 404 exception
+        APIServerException
+            When the raw response describes any other API exception
+        APIResponseParseException
+            If the response cannot be parsed as JSON
+
+        Returns
+        -------
+        Dict
+            The parsed response
+
         """
-
-        if response.status_code == 200 or response.status_code == 201:
-            # response succeeded, no further checking needed
-            return
-
+        if self.raw_response.status_code in [200, 201]:
+            return self.parse_json(self.raw_response)
         else:
-            msg = f"HTTP error {response.status_code}. Server returned error: '{response.text}' " \
-                  f"when calling {response.url}"
-            raise APIServerException(msg)
+            error_response = self.parse_json_clockify_error(self.raw_response)
+            msg = f"HTTP {self.raw_response.status_code} containing API error '{self.raw_response.text}'"
+            if error_response.code == 404:
+                raise APIServer404(msg, error_response=error_response)
+            else:
+                raise APIServerException(msg, error_response=error_response)
+
+    @staticmethod
+    def parse_json(response):
+        """Parse response json string from server into object
+
+        Parameters
+        ----------
+        response: requests.response
+            containing json encoded string received from API
+
+        Raises
+        ------
+        APIResponseParseException
+            When response text cannot be parsed as json
+
+        Returns
+        -------
+        Dict
+            Parsed json
+
+        """
+        try:
+            return response.json()
+        except JSONDecodeError:
+            msg = f"Could not parse response as JSON: '{response.text}'"
+            raise APIResponseParseException(msg)
+
+    def parse_json_clockify_error(self, error_text):
+        """Parse response json string containing an API error from server into object
+
+        Parameters
+        ----------
+        error_text: str
+            json encoded error string received from API
+
+        Raises
+        ------
+        APIResponseParseException
+            When response text cannot be parsed as json or required information is missing from response
+
+        Returns
+        -------
+        APIErrorResponse
+        """
+        parsed = self.parse_json(error_text)
+        # clockify api errors use either 'description' or 'message' for human readable component.
+        if 'message' in parsed.keys():
+            message = parsed['message']
+        elif 'description' in parsed.keys():
+            message = parsed['description']
+        else:
+            msg = f'Could not find "message" or "description" in {parsed}'
+            raise APIResponseParseException(msg)
+
+        if 'code' not in parsed.keys():
+            msg = f'Could not find "code" in {parsed}'
+            raise APIResponseParseException(msg)
+
+        return APIErrorResponse(code=parsed['code'], message=message)
+
+
+class APIErrorResponse:
+
+    def __init__(self, code, message):
+        """An error response received from the API
+
+        Parameters
+        ----------
+        code: int
+        message: str
+        """
+        self.code = code
+        self.message = message
 
 
 class APIException(ClockifyClientException):
@@ -105,6 +252,25 @@ class APIException(ClockifyClientException):
     pass
 
 
+class APIResponseParseException(APIException):
+    pass
+
+
 class APIServerException(APIException):
-    """An exception communicated by the API server """
+    """An exception in the API server itself, communicated properly by the API server """
+    def __init__(self, *args, error_response: APIErrorResponse):
+        """
+
+        Parameters
+        ----------
+        args
+        error_response: APIErrorResponse
+            The response received from server
+        """
+        super().__init__(*args)
+        self.error_response = error_response
+
+
+class APIServer404(APIServerException):
+    """API returns a message with code 404 """
     pass

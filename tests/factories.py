@@ -31,13 +31,17 @@ class RequestsMock:
 
     def __init__(self):
         self.requests = Mock()  # for keeping track of past requests
+        self.http_methods = [self.requests.get,
+                             self.requests.post,
+                             self.requests.patch,
+                             self.requests.update]
 
     def set_response(self, response: RequestMockResponse):
         """Just for convenience"""
         self.set_responses([response])
 
     def set_responses(self, responses: List[RequestMockResponse]):
-        """Any call to get() or post() will yield the given response. A list of responses will be looped over
+        """Any call to a http method will yield the given response. A list of responses will be looped over
         indefinitely
 
         Parameters
@@ -51,14 +55,14 @@ class RequestsMock:
             for response in responses
         ]
 
-        self.requests.get.side_effect = cycle(objects)
-        self.requests.post.side_effect = cycle(objects)
+        for method in self.http_methods:
+            method.side_effect = cycle(objects)
 
     def set_response_exception(self, exception):
-        """Any call to get() or post() will yield the given exception instance
+        """Any call to a http method will yield the given exception instance
         """
-        self.requests.get.side_effect = exception
-        self.requests.post.side_effect = exception
+        for method in self.http_methods:
+            method.side_effect = exception
 
     @staticmethod
     def create_response_object(status_code, text):
@@ -79,8 +83,8 @@ class RequestsMock:
         self.requests.reset_mock()
 
     def called(self):
-        """True if either get() or post() was called"""
-        return self.requests.get.called or self.requests.post.called
+        """True if any http method was called"""
+        return any([x.called for x in self.http_methods])
 
 
 class ClockifyMockResponses:
@@ -92,6 +96,12 @@ class ClockifyMockResponses:
     AUTH_ERROR = RequestMockResponse(
         '{"description":"Full authentication is required to access this resource","code":1000}',
         401,
+    )
+
+    # Trying to set something on
+    CURRENTLY_RUNNING_ENTRY_NOT_FOUND = RequestMockResponse(
+        """{"message":"Currently running time entry doesn't exist on workspace 123456 for user 123456.","code":404}""",
+        404
     )
 
     # calling get /workspaces
