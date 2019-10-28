@@ -30,7 +30,11 @@ Python client for the Clockify web API
 Features
 --------
 
-* TODO
+* Add time entry to a Clockify workspace
+* Add entry with start and end time, or open-ended in stopwatch mode
+* Stop current stopwatch
+* Set Project for each time entry
+
 
 Credits
 -------
