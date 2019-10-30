@@ -45,6 +45,11 @@ def test_date_conversion(mock_models_timezone):
     assert datetime.hour == 14
     assert datetime.minute == 1
 
+    # str representation should always be UTC in Clockify format, ending in Z (for UTC)
+    assert str(ClockifyDatetime(datetime)) == "2018-06-12T14:01:41Z"
+    # Naive datetime should have been branded with local (mock +8)
+    assert str(ClockifyDatetime.init_from_string("2018-06-12T14:01:41")) == "2018-06-12T06:01:41Z"
+
     # naive datetime, should be branded as local timezone, so the mock +8 timezone should have been subtracted for utc
     assert ClockifyDatetime.init_from_string("2018-06-12T14:01:41").datetime_utc.hour == 6
     # but the normal datetime should be unaffected: should be as input

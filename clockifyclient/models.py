@@ -15,6 +15,8 @@ class ClockifyDatetime:
     ClockifyDatetime is always timezone aware. If initialized with a naive datetime, local time is assumed
     """
 
+    clockify_datetime_format = "%Y-%m-%dT%H:%M:%SZ"
+
     def __init__(self, datetime_in):
         """Create
 
@@ -37,12 +39,17 @@ class ClockifyDatetime:
         """This datetime as local time"""
         return self.datetime.astimezone(dateutil.tz.tzlocal())
 
+    @property
+    def clockify_datetime(self):
+        """This datetime a clockify-format string"""
+        return self.datetime_utc.strftime(self.clockify_datetime_format)
+
     @classmethod
     def init_from_string(cls, clockify_date_string):
         return cls(date_parser.parse(clockify_date_string))
 
     def __str__(self):
-        return self.datetime.isoformat()
+        return self.clockify_datetime
 
 
 class APIObject:
