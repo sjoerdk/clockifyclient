@@ -22,7 +22,7 @@ def test_time_entry_from_dict(mock_models_timezone):
     assert time_entry.description == 'testing description'
 
     time_entry_dict_again = TimeEntry.to_dict(time_entry)
-    assert time_entry_dict_again['start'] == '2019-10-23T17:18:58+00:00'
+    assert time_entry_dict_again['start'] == '2019-10-23T17:18:58Z'
     assert time_entry_dict_again['description'] == 'testing description'
     assert time_entry_dict_again['projectId'] == '123456'
 
