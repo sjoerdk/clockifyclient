@@ -24,7 +24,7 @@ class ClockifyDatetime:
             Set this date time. If no timezone is set, will assume local timezone
         """
         if not datetime_in.tzinfo:
-            datetime_in = datetime_in.astimezone(dateutil.tz.tzlocal())
+            datetime_in = datetime_in.replace(tzinfo=dateutil.tz.tzlocal())
         self.datetime = datetime_in
 
     @property

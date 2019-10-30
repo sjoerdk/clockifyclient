@@ -46,10 +46,10 @@ def test_date_conversion(mock_models_timezone):
     assert datetime.hour == 14
     assert datetime.minute == 1
 
-    # naive datetime, set in +8 timezone should reflect
-    assert ClockifyDatetime.init_from_string("2018-06-12T14:01:41").datetime.hour == 20
-    # but utc datetime should be unaffected
-    assert ClockifyDatetime.init_from_string("2018-06-12T14:01:41").datetime_utc.hour == 12
+    # naive datetime, should be branded as local timezone, so the mock +8 timezone should have been subtracted for utc
+    assert ClockifyDatetime.init_from_string("2018-06-12T14:01:41").datetime_utc.hour == 6
+    # but the normal datetime should be unaffected: should be as input
+    assert ClockifyDatetime.init_from_string("2018-06-12T14:01:41").datetime.hour == 14
 
     cltime = ClockifyDatetime(datetime)
     ClockifyDatetime.init_from_string(str(cltime))
