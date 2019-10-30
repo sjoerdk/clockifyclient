@@ -6,7 +6,7 @@ from os import environ
 from clockifyclient.api import APIServer
 from clockifyclient.client import APISession
 
-session = APISession(api_server=APIServer("https://efeapi.geclockify.me/api/v1"),
+session = APISession(api_server=APIServer("https://api.clockify.me/api/v1"),
                      api_key=environ["API_KEY"])
 
 if session.get_projects():

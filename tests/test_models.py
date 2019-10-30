@@ -3,18 +3,27 @@
 import datetime
 import json
 
+import dateutil
+import pytest
+
 from clockifyclient.models import TimeEntry, User, Project, Workspace, APIObject, ProjectStub, NamedAPIObject, \
     ClockifyDatetime
 from tests.factories import ClockifyMockResponses
 
 
-def test_time_entry_from_dict():
+@pytest.fixture()
+def mock_models_timezone(monkeypatch):
+    """Set timezone to +8/+8"""
+    monkeypatch.setattr('clockifyclient.models.dateutil.tz.tzlocal', lambda: dateutil.tz.gettz('Asia/Irkutsk'))
+
+
+def test_time_entry_from_dict(mock_models_timezone):
     time_entry_dict = json.loads(ClockifyMockResponses.POST_TIME_ENTRY.text)
     time_entry = TimeEntry.init_from_dict(time_entry_dict)
     assert time_entry.description == 'testing description'
 
     time_entry_dict_again = TimeEntry.to_dict(time_entry)
-    assert time_entry_dict_again['start'] == '2019-10-23T17:18:58Z'
+    assert time_entry_dict_again['start'] == '2019-10-23T17:18:58+00:00'
     assert time_entry_dict_again['description'] == 'testing description'
     assert time_entry_dict_again['projectId'] == '123456'
 
@@ -28,16 +37,19 @@ def test_time_entry(a_date):
     entry.to_dict()
 
 
-def test_date_conversion():
-    example_string = "2018-06-12T14:01:41Z"
-    datetime = ClockifyDatetime.init_from_string(example_string).datetime
+def test_date_conversion(mock_models_timezone):
+    example_string = "2018-06-12T14:01:41+00:00"
+    datetime = ClockifyDatetime.init_from_string(example_string).datetime_utc
     assert datetime.year == 2018
     assert datetime.month == 6
     assert datetime.day == 12
     assert datetime.hour == 14
     assert datetime.minute == 1
 
-    assert str(ClockifyDatetime(datetime)) == example_string
+    # naive datetime, set in +8 timezone should reflect
+    assert ClockifyDatetime.init_from_string("2018-06-12T14:01:41").datetime.hour == 20
+    # but utc datetime should be unaffected
+    assert ClockifyDatetime.init_from_string("2018-06-12T14:01:41").datetime_utc.hour == 12
 
     cltime = ClockifyDatetime(datetime)
     ClockifyDatetime.init_from_string(str(cltime))

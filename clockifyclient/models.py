@@ -3,30 +3,46 @@ Models as simply as possible, omitting any fields not used by this package
 """
 import datetime
 
+import dateutil
+import dateutil.parser as date_parser
+
 from clockifyclient.exceptions import ClockifyClientException
 
 
 class ClockifyDatetime:
+    """For converting between python datetime and clockify datetime string
 
-    date_string_format = "%Y-%m-%dT%H:%M:%SZ"
+    ClockifyDatetime is always timezone aware. If initialized with a naive datetime, local time is assumed
+    """
 
-    """For converting between python datetime and clockify datetime string"""
-    def __init__(self, datetime):
-        """
+    def __init__(self, datetime_in):
+        """Create
 
         Parameters
         ----------
-        datetime: datetime
-            set this date time
+        datetime_in: datetime
+            Set this date time. If no timezone is set, will assume local timezone
         """
-        self.datetime = datetime
+        if not datetime_in.tzinfo:
+            datetime_in = datetime_in.astimezone(dateutil.tz.tzlocal())
+        self.datetime = datetime_in
+
+    @property
+    def datetime_utc(self):
+        """This datetime in the UTC time zone"""
+        return self.datetime.astimezone(dateutil.tz.UTC)
+
+    @property
+    def datetime_local(self):
+        """This datetime as local time"""
+        return self.datetime.astimezone(dateutil.tz.tzlocal())
 
     @classmethod
     def init_from_string(cls, clockify_date_string):
-        return cls(datetime=datetime.datetime.strptime(clockify_date_string, cls.date_string_format))
+        return cls(date_parser.parse(clockify_date_string))
 
     def __str__(self):
-        return datetime.datetime.strftime(self.datetime, self.date_string_format)
+        return self.datetime.isoformat()
 
 
 class APIObject:
