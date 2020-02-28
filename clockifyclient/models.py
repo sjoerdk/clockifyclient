@@ -208,7 +208,7 @@ class ProjectStub(Project):
 
 class TimeEntry(APIObject):
 
-    def __init__(self, obj_id, start, description='', project=None, end=None):
+    def __init__(self, obj_id, start, description='', project=None, end=None, billable='false'):
         """
 
         Parameters
@@ -223,12 +223,15 @@ class TimeEntry(APIObject):
             Project associated with this entry. Defaults to None
         end: DateTime, optional
             End of time entry. Defaults to None, meaning timer mode is activated
+        billable: str
+            Mark as billable or not, defaults to 'false'
         """
         super().__init__(obj_id=obj_id)
         self.start = start
         self.description = description
         self.project = project
         self.end = end
+        self.billable = billable
 
     @staticmethod
     def truncate(msg, length=30):
@@ -267,7 +270,8 @@ class TimeEntry(APIObject):
         """As dict that can be sent to API"""
         as_dict = {"id": self.obj_id,
                    "start": str(ClockifyDatetime(self.start)),
-                   "description": self.description
+                   "description": self.description,
+                   "billable": self.billable
                    }
         if self.end:
             as_dict["end"] = str(ClockifyDatetime(self.end))

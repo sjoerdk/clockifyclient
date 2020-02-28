@@ -58,7 +58,7 @@ class APISession:
                                        workspace=self.get_default_workspace(),
                                        time_entry=time_entry)
 
-    def add_time_entry(self, start_time, end_time=None, description=None, project=None):
+    def add_time_entry(self, start_time, end_time=None, description=None, project=None,billable='false'):
         """Add a time entry to default workspace. If no end time is given stopwatch mode is activated.
 
         This will stop any previously running stopwatch
@@ -84,7 +84,8 @@ class APISession:
                                start=start_time,
                                description=description,
                                project=project,
-                               end=end_time)
+                               end=end_time,
+                               billable=billable)
 
         return self.add_time_entry_object(time_entry=time_entry)
 
