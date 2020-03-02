@@ -2,7 +2,7 @@
 import datetime
 
 from clockifyclient.api import APIServer, APIServer404
-from clockifyclient.models import Workspace, User, Project, TimeEntry, ClockifyDatetime
+from clockifyclient.models import Workspace, User, Project, Tag, TimeEntry, ClockifyDatetime
 from functools import lru_cache
 
 
@@ -39,6 +39,12 @@ class APISession:
     def get_projects(self):
         return self.api.get_projects(api_key=self.api_key,
                                      workspace=self.get_default_workspace())
+    
+    @lru_cache()
+    def get_tags(self):
+        return self.api.get_tags(api_key=self.api_key,
+                                     workspace=self.get_default_workspace())
+
 
     def add_time_entry_object(self, time_entry: TimeEntry):
         """Add the given time entry to the default workspace
@@ -194,6 +200,27 @@ class ClockifyAPI:
             path=f"/workspaces/{workspace.obj_id}/projects", api_key=api_key
         )
         return [Project.init_from_dict(x) for x in response]
+
+    def get_tags(self, api_key, workspace):
+        """Get all tags for given workspace
+
+        Parameters
+        ----------
+        api_key: str
+            Clockify Api key
+        workspace: Workspace
+            Get tags in this workspace
+
+        Returns
+        -------
+        List[Tag]
+
+        """
+        response = self.api_server.get(
+            path=f"/workspaces/{workspace.obj_id}/tags", api_key=api_key
+        )
+        return [Tag.init_from_dict(x) for x in response]
+
 
     def add_time_entry(self, api_key: str, workspace: Workspace, time_entry: TimeEntry):
         """
