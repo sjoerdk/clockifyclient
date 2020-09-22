@@ -198,7 +198,8 @@ class Project(NamedAPIObject):
 
 
 class ProjectStub(Project):
-    """A project with only an id. This occurs when a project ID is returned by API as part of a different query"""
+    """A project with only an id. This occurs when a project ID is returned by
+    API as part of a different query"""
     def __init__(self, obj_id):
         super().__init__(obj_id=obj_id, name=None)
 
@@ -274,6 +275,29 @@ class TimeEntry(APIObject):
         if self.project:
             as_dict["projectId"] = self.project.obj_id
 
+        return {x: y for x, y in as_dict.items() if y}  # remove items with None value
+
+
+class TimeEntryQuery:
+    """A query for the time-entries endpoint"""
+
+    def __init__(self, description: str):
+        """
+
+        Parameters
+        ----------
+        description: str
+            time entries will be filtered by description.
+
+        """
+        self.description = description
+
+    def __str__(self):
+        return f"TimeEntryQuery ('{self.to_dict()}'"
+
+    def to_dict(self):
+        """As dict that can be sent to API"""
+        as_dict = {"description": self.description}
         return {x: y for x, y in as_dict.items() if y}  # remove items with None value
 
 

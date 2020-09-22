@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 import datetime
+from itertools import islice
+from typing import Generator, List, Optional
 
-from clockifyclient.api import APIServer, APIServer404
-from clockifyclient.models import Workspace, User, Project, TimeEntry, ClockifyDatetime
+from clockifyclient.api import APIServer, APIServer404, PagedGetIterator
+from clockifyclient.models import TimeEntryQuery, Workspace, User, Project, TimeEntry, \
+    ClockifyDatetime
 from functools import lru_cache
 
 
@@ -41,6 +44,10 @@ class APISession:
         return self.api.get_projects(api_key=self.api_key,
                                      workspace=self.get_default_workspace())
 
+    def add_time_entries(self, entries: List[TimeEntry]):
+        for entry in entries:
+            self.add_time_entry_object(entry)
+
     def add_time_entry_object(self, time_entry: TimeEntry):
         """Add the given time entry to the default workspace
 
@@ -55,12 +62,14 @@ class APISession:
             The created time entry
 
         """
-        return self.api.add_time_entry(api_key=self.api_key,
-                                       workspace=self.get_default_workspace(),
-                                       time_entry=time_entry)
+        return self.api.add_time_entry_object(api_key=self.api_key,
+                                              workspace=self.get_default_workspace(),
+                                              time_entry=time_entry)
 
-    def add_time_entry(self, start_time, end_time=None, description=None, project=None):
-        """Add a time entry to default workspace. If no end time is given stopwatch mode is activated.
+    def add_time_entry(self, start_time, end_time=None, description=None,
+                       project=None):
+        """Add a time entry to default workspace. If no end time is given stopwatch
+         mode is activated.
 
         This will stop any previously running stopwatch
 
@@ -69,7 +78,8 @@ class APISession:
         start_time: datetime, UTC
             Set start of time entry to this
         end_time: datetime, UTC, optional
-            Set end of time entry to this. If not given, activate stopwatch mode. Defaults to None
+            Set end of time entry to this. If not given, activate stopwatch mode.
+            Defaults to None
         description: str, optional
             Description of this time entry. Defaults to None
         project: Project, optional
@@ -95,7 +105,8 @@ class APISession:
         Parameters
         ----------
         stop_time: datetime, UTC, optional
-            Set the end date of the timed entry to this. Defaults to None, meaning time will be set to utcnow()
+            Set the end date of the timed entry to this. Defaults to None, meaning
+            time will be set to utcnow()
         Returns
         -------
         TimeEntry:
@@ -114,6 +125,28 @@ class APISession:
                     end_time=stop_time
                 )
 
+    def get_time_entries(self, query: TimeEntryQuery, limit: Optional[int]
+                         ) -> List[TimeEntry]:
+        """
+
+        Parameters
+        ----------
+        query: TimeEntryQuery
+            get TimeEntry objects corresponding to this query
+        limit: Optional[int]
+            retrieve at most this number of items. Limits calls to the server.
+            Defaults to retrieving all items
+
+        Returns
+        -------
+
+        """
+        return self.api.get_time_entries(api_key=self.api_key,
+                                         workspace=self.get_default_workspace(),
+                                         user=self.get_user(),
+                                         query=query,
+                                         limit=limit)
+
     @staticmethod
     def now():
         """
@@ -126,7 +159,8 @@ class APISession:
 
 
 class ClockifyAPI:
-    """A Clockify API in the python world. Returns python objects. Does not know about http requests
+    """A Clockify API in the python world. Returns python objects. Does not know
+    about http requests
 
     Notes
     -----
@@ -159,7 +193,7 @@ class ClockifyAPI:
         response = self.api_server.get(path="/workspaces", api_key=api_key)
         return [Workspace.init_from_dict(x) for x in response]
 
-    def get_user(self, api_key):
+    def get_user(self, api_key) -> User:
         """Get the user for the given api key
 
         Parameters
@@ -195,8 +229,10 @@ class ClockifyAPI:
         )
         return [Project.init_from_dict(x) for x in response]
 
-    def add_time_entry(self, api_key: str, workspace: Workspace, time_entry: TimeEntry):
-        """
+    def add_time_entry_object(self, api_key: str, workspace: Workspace,
+                              time_entry: TimeEntry):
+        """Save the given TimeEntry instance to server. If TimeEntry.obj_id is set
+        will update existing. If TimeEntry.obj_id is None will add instance as new
 
         Parameters
         ----------
@@ -213,14 +249,62 @@ class ClockifyAPI:
             The created time entry
 
         """
+        if time_entry.obj_id:
+            self.api_server.put(
+                path=f"/workspaces/{workspace.obj_id}/time-entries/"
+                     f"{time_entry.obj_id}",
+                api_key=api_key, data=time_entry.to_dict())
+            return time_entry
+        else:
+            result = self.api_server.post(
+                path=f"/workspaces/{workspace.obj_id}/time-entries", api_key=api_key,
+                data=time_entry.to_dict())
+            return TimeEntry.init_from_dict(result)
 
-        result = self.api_server.post(
-            path=f"/workspaces/{workspace.obj_id}/time-entries",
+    def get_time_entries(self, api_key: str, workspace: Workspace, user: User,
+                         query: TimeEntryQuery,
+                         limit: Optional[int] = None) -> List[TimeEntry]:
+        """Get all time entries corresponding to search criteria
+
+        Parameters
+        ----------
+        api_key: str
+            Clockify Api key
+        workspace: Workspace
+            Get projects in this workspace
+        user: User
+            User for time entries
+        query: TimeEntryQuery:
+            filter time entries with this query
+        limit: Optional[int]
+            Retrieve this number of items maximum, potentially calling
+            the server less. Defaults to None which means
+            all items are retrieved.
+
+        Notes
+        -----
+        This method might make multiple calls to the API if the number of results
+        is over 50
+        """
+        return list(islice(
+            self.get_time_entries_iterator(api_key, workspace, user, query), limit))
+
+    def get_time_entries_iterator(
+            self, api_key: str, workspace: Workspace, user: User,
+            query: TimeEntryQuery) -> Generator[TimeEntry, None, None]:
+        """Get all time entries corresponding to search criteria
+
+        Notes
+        -----
+        This method might make multiple calls to the API if the number of results
+        is over 50
+        """
+        iterator = self.api_server.get_iterator(
+            path=f"/workspaces/{workspace.obj_id}/user/{user.obj_id}/time-entries",
             api_key=api_key,
-            data=time_entry.to_dict(),
-        )
+            params=query.to_dict())
 
-        return TimeEntry.init_from_dict(result)
+        return (TimeEntry.init_from_dict(x) for x in iterator)
 
     def set_active_time_entry_end(
         self, api_key: str, workspace: Workspace, user: User, end_time: datetime

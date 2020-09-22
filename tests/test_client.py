@@ -46,7 +46,8 @@ def a_time_entry(a_project):
 
 @pytest.fixture()
 def a_mock_api(mock_requests, an_api, a_project, a_user, a_workspace, a_time_entry):
-    """A ClockifyAPI that just returns default objects for all methods, not calling any server
+    """A ClockifyAPI that just returns default objects for all methods,
+    not calling any server
 
     """
 
@@ -54,7 +55,7 @@ def a_mock_api(mock_requests, an_api, a_project, a_user, a_workspace, a_time_ent
     mock_api.get_projects.return_value = [a_project]
     mock_api.get_user.return_value = a_user
     mock_api.get_workspaces.return_value = [a_workspace]
-    mock_api.add_time_entry.return_value = a_time_entry
+    mock_api.add_time_entry_object.return_value = a_time_entry
     mock_api.set_active_time_entry_end.return_value = a_time_entry
     return mock_api
 
@@ -83,7 +84,7 @@ def test_api_add_time_entry(mock_requests, an_api, a_workspace, a_time_entry):
     mock_requests.set_response(ClockifyMockResponses.POST_TIME_ENTRY)
 
     # should not raise exceptions. Not much else to check with these mocks
-    an_api.add_time_entry(api_key='mock_key', workspace=a_workspace, time_entry=a_time_entry)
+    an_api.add_time_entry_object(api_key='mock_key', workspace=a_workspace, time_entry=a_time_entry)
 
 
 def test_set_active_time_entry_end(mock_requests, an_api, a_workspace, a_user, a_date):

@@ -1,7 +1,9 @@
 """Models the clockify API. Tries to stay close to the actual endpoints.
 This layer is the only one that should do actual http queries
 """
+from collections import Iterator
 from json.decoder import JSONDecodeError
+from typing import Dict, List
 
 import requests
 
@@ -10,7 +12,8 @@ from clockifyclient.exceptions import ClockifyClientException
 
 
 class APIServer:
-    """Models a clockify API server. Basic HTTP interaction. Returns json and raises exceptions
+    """Models a clockify API server. Basic HTTP interaction. Returns json and
+    raises exceptions
 
     Notes
     -----
@@ -40,6 +43,7 @@ class APIServer:
         params: Dict, optional
             Request parameters to send. Defaults to empty list
 
+
         Returns
         -------
         Dict or List:
@@ -54,6 +58,30 @@ class APIServer:
             params=params
         )
         return APIRawResponse(response_raw).parse()
+
+    def get_iterator(self, path, api_key, params=None) -> 'PagedGetIterator':
+        """A get request that iterates over items and calls API again for more
+        items if needed
+
+        Parameters
+        ----------
+        path: str
+            relative path to endpoint. Like '/user' or '/workspaces'
+        api_key: str
+            api key to send with request
+        params: Dict, optional
+            Request parameters to send. Defaults to empty list
+
+
+        Returns
+        -------
+        PagedGetIterator
+            An iterator that will make additions calls to API to retrieve additional
+            elements if needed
+
+        """
+
+        return PagedGetIterator(url=self.url + path, api_key=api_key, params=params)
 
     @except_connection_error
     def post(self, path, api_key, data):
@@ -132,6 +160,85 @@ class APIServer:
             json=data
         )
         return APIRawResponse(response_raw).parse()
+
+
+class PagedGetIterator:
+
+    def __init__(self, url: str, api_key: str, params: Dict[str, str] = None):
+        """Large responses are paged by clockify, meaning a single call will only
+        return data on the first N items. To get all items, repeated calls are
+        needed. This iterator returns items and repeats calls when needed until
+        all items have been retrieved
+
+
+        Parameters
+        ----------
+        url: str
+            relative path to endpoint. Like '/user' or '/workspaces'
+        api_key: str
+            api key to send with request
+        params: Dict, optional
+            Request parameters to send. Defaults to empty dict
+
+        Notes
+        -----
+        Assumes the API endpoint at url supports the following request parameters:
+        page: integer
+            the page to return
+        page-size: integer
+            the number of items to return on each page
+
+        Returns
+        -------
+        Dict or List:
+            Json-interpreted response from server
+        """
+        self.url = url
+        self.api_key = api_key
+        if not params:
+            params = {}
+        self.params = params
+        self.current_page_iterator = iter([])
+        self.current_page_number = 0
+        self.page_size = 50
+        self.might_have_more = True
+
+    def get_response(self, page: int) -> List[Dict]:
+        """Get responses for given page
+        """
+        self.params['page'] = str(page)
+        self.params['page-size'] = str(self.page_size)
+        response_raw = requests.get(
+            self.url,
+            headers={"X-Api-key": self.api_key, "content-type": "application/json"},
+            params=self.params
+        )
+        return APIRawResponse(response_raw).parse()
+
+    def get_next_page(self):
+        """Try to call API for the next batch of results"""
+        self.current_page_number += 1
+        items = self.get_response(page=self.current_page_number)
+        if len(items) < self.page_size:
+            # less items than requested were returned. This is the last page
+            self.might_have_more = False
+        self.current_page_iterator = iter(items)
+
+    def __next__(self) -> Dict:
+
+        try:  # Return an item from the last response
+            return self.current_page_iterator.__next__()
+        except StopIteration:
+            if self.might_have_more:
+                # the last response items ran out, but there could be more. get.
+                self.get_next_page()
+                return self.current_page_iterator.__next__()
+            else:
+                # we were already at the last page. End of iteration
+                raise
+
+    def __iter__(self):
+        return self
 
 
 class APIRawResponse:
