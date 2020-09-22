@@ -6,8 +6,7 @@ from requests.models import Response
 
 
 class RequestMockResponse:
-    """A description of a http server response
-    """
+    """A description of a http server response"""
 
     def __init__(self, text, response_code):
         """
@@ -25,8 +24,8 @@ class RequestMockResponse:
 
 
 class RequestsMock:
-    """ Can be put in place of the requests module. Can be set to return requests.models.Response objects
-
+    """ Can be put in place of the requests module. Can be set to return
+    requests.models.Response objects
     """
 
     def __init__(self):
@@ -59,8 +58,7 @@ class RequestsMock:
             method.side_effect = cycle(objects)
 
     def set_response_exception(self, exception):
-        """Any call to a http method will yield the given exception instance
-        """
+        """Any call to a http method will yield the given exception instance"""
         for method in self.http_methods:
             method.side_effect = exception
 
@@ -88,7 +86,8 @@ class RequestsMock:
 
 
 class ClockifyMockResponses:
-    """Some cached examples of http responses from Clockify API v1. These partly come from https://clockify.me/developers-api
+    """Some cached examples of http responses from Clockify API v1. These partly come
+    from https://clockify.me/developers-api
     and party were recorded by interacting with the server live around november 2019
     """
 

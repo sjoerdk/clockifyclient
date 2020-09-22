@@ -7,11 +7,12 @@ from functools import lru_cache
 
 
 class APISession:
-    """Models the interaction of one user with one workspace. Caches current user, workspace and projects.
+    """Models the interaction of one user with one workspace. Caches current user,
+    workspace and projects.
 
     To make basic interactions quicker this class makes two simplifying assumptions:
     * All actions pertain to one user, the owner of the api_key
-    * All actions pertain to only one workspace, the users default workspace
+    * All actions pertain to only one workspace, the user's default workspace
 
     """
 
