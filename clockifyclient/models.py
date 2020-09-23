@@ -1,8 +1,6 @@
-""" Models the objects with which the clockify API works. One level above json dicts.
+"""Models the objects with which the clockify API works. One level above json dicts.
 Models as simply as possible, omitting any fields not used by this package
 """
-import datetime
-
 import dateutil
 import dateutil.parser as date_parser
 
@@ -31,17 +29,17 @@ class ClockifyDatetime:
 
     @property
     def datetime_utc(self):
-        """This datetime in the UTC time zone"""
+        """Datetime in the UTC time zone"""
         return self.datetime.astimezone(dateutil.tz.UTC)
 
     @property
     def datetime_local(self):
-        """This datetime as local time"""
+        """Datetime as local time"""
         return self.datetime.astimezone(dateutil.tz.tzlocal())
 
     @property
     def clockify_datetime(self):
-        """This datetime a clockify-format string"""
+        """Datetime a clockify-format string"""
         return self.datetime_utc.strftime(self.clockify_datetime_format)
 
     @classmethod
@@ -69,8 +67,8 @@ class APIObject:
         return f"API object {self.obj_id}"
 
     @classmethod
-    def get_item(cls, dict_in, key, raise_error=True):
-        """ Get item from dict, raise exception or return None if not found
+    def get_item(cls, dict_in, key):
+        """Get item from dict, raise exception if not found
 
         Parameters
         ----------
@@ -78,13 +76,10 @@ class APIObject:
             dict to search in
         key: str
             dict key
-        raise_error: Bool, optional
-            If True raises error when key not found. Otherwise returns None. Defaults to True
-
         Raises
         ------
         ObjectParseException
-            When key is not found in dict and raise_error is False
+            When key is not found in dict
 
         Returns
         -------
@@ -102,7 +97,7 @@ class APIObject:
 
     @classmethod
     def get_datetime(cls, dict_in, key, raise_error=True):
-        """ Try to find key in dict and parse to datetime
+        """Try to find key in dict and parse to datetime
 
         Parameters
         ----------
@@ -137,7 +132,9 @@ class APIObject:
 
     @classmethod
     def init_from_dict(cls, dict_in):
-        """ Create an instance of this class from the expected json dict returned from Clockify API
+        """Create an instance of this class from the expected json dict returned
+        from Clockify API
+
         Parameters
         ----------
         dict_in: Dict
@@ -153,12 +150,13 @@ class APIObject:
         instance of this class, initialized to the values in dict_in
 
         """
-        return cls(obj_id=cls.get_item(dict_in=dict_in, key='id'),
-                   name=cls.get_item(dict_in=dict_in, key='name'))
+        return cls(
+            obj_id=cls.get_item(dict_in=dict_in, key="id"),
+            name=cls.get_item(dict_in=dict_in, key="name"),
+        )
 
 
 class NamedAPIObject(APIObject):
-
     def __init__(self, obj_id, name):
         """
 
@@ -177,12 +175,13 @@ class NamedAPIObject(APIObject):
 
     @classmethod
     def init_from_dict(cls, dict_in):
-        return cls(obj_id=cls.get_item(dict_in=dict_in, key='id'),
-                   name=cls.get_item(dict_in=dict_in, key='name'))
+        return cls(
+            obj_id=cls.get_item(dict_in=dict_in, key="id"),
+            name=cls.get_item(dict_in=dict_in, key="name"),
+        )
 
 
 class User(NamedAPIObject):
-
     def __str__(self):
         return f"User '{self.name}' ({self.obj_id})"
 
@@ -199,7 +198,9 @@ class Project(NamedAPIObject):
 
 class ProjectStub(Project):
     """A project with only an id. This occurs when a project ID is returned by
-    API as part of a different query"""
+    API as part of a different query
+    """
+
     def __init__(self, obj_id):
         super().__init__(obj_id=obj_id, name=None)
 
@@ -208,8 +209,7 @@ class ProjectStub(Project):
 
 
 class TimeEntry(APIObject):
-
-    def __init__(self, obj_id, start, description='', project=None, end=None):
+    def __init__(self, obj_id, start, description="", project=None, end=None):
         """
 
         Parameters
@@ -234,7 +234,7 @@ class TimeEntry(APIObject):
     @staticmethod
     def truncate(msg, length=30):
         if msg[(length):]:
-            return msg[:(length-3)] + "..."
+            return msg[: (length - 3)] + "..."
         else:
             return msg
 
@@ -244,32 +244,36 @@ class TimeEntry(APIObject):
     @classmethod
     def init_from_dict(cls, dict_in):
         # required parameters
-        interval = cls.get_item(dict_in, 'timeInterval')
-        obj_id = cls.get_item(dict_in=dict_in, key='id')
-        start = cls.get_datetime(dict_in=interval, key='start')
+        interval = cls.get_item(dict_in, "timeInterval")
+        obj_id = cls.get_item(dict_in=dict_in, key="id")
+        start = cls.get_datetime(dict_in=interval, key="start")
 
         # optional parameters
-        description = cls.get_item(dict_in=dict_in, key='description', raise_error=False)
-        project_id = cls.get_item(dict_in=dict_in, key='projectId', raise_error=False)
+        description = cls.get_item(
+            dict_in=dict_in, key="description", raise_error=False
+        )
+        project_id = cls.get_item(dict_in=dict_in, key="projectId", raise_error=False)
         if project_id:
             project = ProjectStub(obj_id=project_id)
         else:
             project = None
-        end = cls.get_datetime(dict_in=interval, key='end', raise_error=False)
+        end = cls.get_datetime(dict_in=interval, key="end", raise_error=False)
 
-        return cls(obj_id=obj_id,
-                   start=start,
-                   description=description,
-                   project=project,
-                   end=end
-                   )
+        return cls(
+            obj_id=obj_id,
+            start=start,
+            description=description,
+            project=project,
+            end=end,
+        )
 
     def to_dict(self):
         """As dict that can be sent to API"""
-        as_dict = {"id": self.obj_id,
-                   "start": str(ClockifyDatetime(self.start)),
-                   "description": self.description
-                   }
+        as_dict = {
+            "id": self.obj_id,
+            "start": str(ClockifyDatetime(self.start)),
+            "description": self.description,
+        }
         if self.end:
             as_dict["end"] = str(ClockifyDatetime(self.end))
         if self.project:

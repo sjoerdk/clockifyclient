@@ -4,7 +4,7 @@ from clockifyclient.exceptions import ClockifyClientException
 
 
 def except_connection_error(func):
-    """decorator to translate any requests connectionerror to APIException.
+    """Decorator to translate any requests connectionerror to APIException.
 
     Made this to have all common exceptions derive from ClockifyClientException
     """
@@ -13,6 +13,6 @@ def except_connection_error(func):
         try:
             return func(*args, **kwargs)
         except requests.exceptions.ConnectionError as e:
-            raise ClockifyClientException(f'Requests connection error: {e}')
+            raise ClockifyClientException(f"Requests connection error: {e}")
 
     return decorated

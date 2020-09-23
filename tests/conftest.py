@@ -1,4 +1,6 @@
-"""Conftest.py is loaded for each pytest. Contains fixtures shared by multiple tests, amongs other things """
+"""Conftest.py is loaded for each pytest. Contains fixtures shared by multiple
+tests, amongs other things
+"""
 import datetime
 
 from tests.factories import RequestsMock

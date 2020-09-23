@@ -1,7 +1,6 @@
 """Models the clockify API. Tries to stay close to the actual endpoints.
 This layer is the only one that should do actual http queries
 """
-from collections import Iterator
 from json.decoder import JSONDecodeError
 from typing import Dict, List
 
@@ -55,11 +54,11 @@ class APIServer:
         response_raw = requests.get(
             self.url + path,
             headers={"X-Api-key": api_key, "content-type": "application/json"},
-            params=params
+            params=params,
         )
         return APIRawResponse(response_raw).parse()
 
-    def get_iterator(self, path, api_key, params=None) -> 'PagedGetIterator':
+    def get_iterator(self, path, api_key, params=None) -> "PagedGetIterator":
         """A get request that iterates over items and calls API again for more
         items if needed
 
@@ -105,7 +104,7 @@ class APIServer:
         response_raw = requests.post(
             self.url + path,
             headers={"X-Api-key": api_key, "content-type": "application/json"},
-            json=data
+            json=data,
         )
         return APIRawResponse(response_raw).parse()
 
@@ -131,7 +130,7 @@ class APIServer:
         response_raw = requests.put(
             self.url + path,
             headers={"X-Api-key": api_key, "content-type": "application/json"},
-            json=data
+            json=data,
         )
         return APIRawResponse(response_raw).parse()
 
@@ -157,13 +156,12 @@ class APIServer:
         response_raw = requests.patch(
             self.url + path,
             headers={"X-Api-key": api_key, "content-type": "application/json"},
-            json=data
+            json=data,
         )
         return APIRawResponse(response_raw).parse()
 
 
 class PagedGetIterator:
-
     def __init__(self, url: str, api_key: str, params: Dict[str, str] = None):
         """Large responses are paged by clockify, meaning a single call will only
         return data on the first N items. To get all items, repeated calls are
@@ -204,14 +202,13 @@ class PagedGetIterator:
         self.might_have_more = True
 
     def get_response(self, page: int) -> List[Dict]:
-        """Get responses for given page
-        """
-        self.params['page'] = str(page)
-        self.params['page-size'] = str(self.page_size)
+        """Get responses for given page"""
+        self.params["page"] = str(page)
+        self.params["page-size"] = str(self.page_size)
         response_raw = requests.get(
             self.url,
             headers={"X-Api-key": self.api_key, "content-type": "application/json"},
-            params=self.params
+            params=self.params,
         )
         return APIRawResponse(response_raw).parse()
 
@@ -242,7 +239,6 @@ class PagedGetIterator:
 
 
 class APIRawResponse:
-
     def __init__(self, raw_response):
         """A response as received from an API server
 
@@ -325,23 +321,22 @@ class APIRawResponse:
         """
         parsed = self.parse_json(error_text)
         # clockify api errors use either 'description' or 'message' for human readable component.
-        if 'message' in parsed.keys():
-            message = parsed['message']
-        elif 'description' in parsed.keys():
-            message = parsed['description']
+        if "message" in parsed.keys():
+            message = parsed["message"]
+        elif "description" in parsed.keys():
+            message = parsed["description"]
         else:
             msg = f'Could not find "message" or "description" in {parsed}'
             raise APIResponseParseException(msg)
 
-        if 'code' not in parsed.keys():
+        if "code" not in parsed.keys():
             msg = f'Could not find "code" in {parsed}'
             raise APIResponseParseException(msg)
 
-        return APIErrorResponse(code=parsed['code'], message=message)
+        return APIErrorResponse(code=parsed["code"], message=message)
 
 
 class APIErrorResponse:
-
     def __init__(self, code, message):
         """An error response received from the API
 
@@ -356,6 +351,7 @@ class APIErrorResponse:
 
 class APIException(ClockifyClientException):
     """Base exception for this module. 'Something' went wrong"""
+
     pass
 
 
@@ -364,7 +360,10 @@ class APIResponseParseException(APIException):
 
 
 class APIServerException(APIException):
-    """An exception in the API server itself, communicated properly by the API server """
+    """An exception in the API server itself, communicated properly by the API
+    server
+    """
+
     def __init__(self, *args, error_response: APIErrorResponse):
         """
 
@@ -379,5 +378,6 @@ class APIServerException(APIException):
 
 
 class APIServer404(APIServerException):
-    """API returns a message with code 404 """
+    """API returns a message with code 404"""
+
     pass
