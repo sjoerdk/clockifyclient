@@ -10,7 +10,8 @@ from clockifyclient.exceptions import ClockifyClientException
 class ClockifyDatetime:
     """For converting between python datetime and clockify datetime string
 
-    ClockifyDatetime is always timezone aware. If initialized with a naive datetime, local time is assumed
+    ClockifyDatetime is always timezone aware. If initialized with a naive datetime,
+    local time is assumed
     """
 
     clockify_datetime_format = "%Y-%m-%dT%H:%M:%SZ"
@@ -50,6 +51,10 @@ class ClockifyDatetime:
         return self.clockify_datetime
 
 
+# for indicating a value is not set while allowing None to be a valid value
+NOT_SET = object()
+
+
 class APIObject:
     """An object that can be returned by the clockify API"""
 
@@ -67,8 +72,8 @@ class APIObject:
         return f"API object {self.obj_id}"
 
     @classmethod
-    def get_item(cls, dict_in, key):
-        """Get item from dict, raise exception if not found
+    def get_item(cls, dict_in, key, default=NOT_SET):
+        """Get item from dict, raise exception or return default if not found
 
         Parameters
         ----------
@@ -76,27 +81,31 @@ class APIObject:
             dict to search in
         key: str
             dict key
+        default: any, optional
+            return this when key is not found. Default is to raise exception instead
+
         Raises
         ------
         ObjectParseException
-            When key is not found in dict
+            When key is not found in dict and no default is set
 
         Returns
         -------
-        object
-            Dict item at key
-        None
-            If item not found and raise_error is True
+        any
+            Dict item at key or default
 
         """
         try:
             return dict_in[key]
         except KeyError:
-            msg = f"Could not find key '{key}' in '{dict_in}'"
-            raise ObjectParseException(msg)
+            if default == NOT_SET:
+                msg = f"Could not find key '{key}' in '{dict_in}'"
+                raise ObjectParseException(msg)
+            else:
+                return default
 
     @classmethod
-    def get_datetime(cls, dict_in, key, raise_error=True):
+    def get_datetime(cls, dict_in, key, default=NOT_SET):
         """Try to find key in dict and parse to datetime
 
         Parameters
@@ -105,25 +114,28 @@ class APIObject:
             dict to search in
         key: str
             dict key
-        raise_error: Bool, optional
-            If True raises error when key not found. Otherwise returns None. Defaults to True
+        default: any, optional
+            Return this when key is not found in dict. Defaults to raising exception
 
         Raises
         ------
         ObjectParseException
-            When key is not found in dict (if raise_error is True) or could not be parsed to datetime.
+            When key is not found in dict  or could not be parsed to datetime.
             Exception is always raised when value cannot be parsed
 
         Returns
         -------
         datetime
             parsed date from dict[key]
-        None
-            If item not found and raise_error is True
+        any
+            If item not found and default is set
         """
-        date_str = cls.get_item(dict_in, key, raise_error=raise_error)
+        date_str = cls.get_item(dict_in, key, default=default)
         if not date_str:
-            return None
+            if default == NOT_SET:
+                raise ObjectParseException(f"Key {key} not found")
+            else:
+                return default
         try:
             return ClockifyDatetime.init_from_string(date_str).datetime
         except ValueError as e:
@@ -249,15 +261,13 @@ class TimeEntry(APIObject):
         start = cls.get_datetime(dict_in=interval, key="start")
 
         # optional parameters
-        description = cls.get_item(
-            dict_in=dict_in, key="description", raise_error=False
-        )
-        project_id = cls.get_item(dict_in=dict_in, key="projectId", raise_error=False)
+        description = cls.get_item(dict_in=dict_in, key="description")
+        project_id = cls.get_item(dict_in=dict_in, key="projectId", default=None)
         if project_id:
             project = ProjectStub(obj_id=project_id)
         else:
             project = None
-        end = cls.get_datetime(dict_in=interval, key="end", raise_error=False)
+        end = cls.get_datetime(dict_in=interval, key="end", default=None)
 
         return cls(
             obj_id=obj_id,
