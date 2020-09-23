@@ -9,11 +9,6 @@ Clockify API Python client
 .. image:: https://img.shields.io/travis/sjoerdk/clockifyclient.svg
         :target: https://travis-ci.org/sjoerdk/clockifyclient
 
-.. image:: https://readthedocs.org/projects/clockify-api-client/badge/?version=latest
-        :target: https://clockifyclient.readthedocs.io/en/latest/?badge=latest
-        :alt: Documentation Status
-
-
 .. image:: https://pyup.io/repos/github/sjoerdk/clockifyclient/shield.svg
      :target: https://pyup.io/repos/github/sjoerdk/clockifyclient/
      :alt: Updates
@@ -30,11 +25,10 @@ Python client for the Clockify web API
 Features
 --------
 
-* Add time entry to a Clockify workspace
+* Add a time entry to a Clockify workspace
 * Add entry with start and end time, or open-ended in stopwatch mode
-* Stop current stopwatch
-* Set Project for each time entry
-
+* Set Project time entry
+* Batch edit Time entries
 
 Credits
 -------
