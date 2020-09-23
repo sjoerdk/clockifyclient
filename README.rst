@@ -6,12 +6,19 @@ Clockify API Python client
 .. image:: https://img.shields.io/pypi/v/clockifyclient.svg
         :target: https://pypi.python.org/pypi/clockifyclient
 
-.. image:: https://img.shields.io/travis/sjoerdk/clockifyclient.svg
-        :target: https://travis-ci.org/sjoerdk/clockifyclient
+.. image:: https://github.com/sjoerdk/clockifyclient/workflows/build/badge.svg
+        :target: https://github.com/sjoerdk/clockifyclient/actions?query=workflow%3Abuild
+        :alt: Build Status
+
+.. image:: https://codecov.io/gh/sjoerdk/clockifyclient/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/sjoerdk/clockifyclient
 
 .. image:: https://pyup.io/repos/github/sjoerdk/clockifyclient/shield.svg
      :target: https://pyup.io/repos/github/sjoerdk/clockifyclient/
      :alt: Updates
+
+.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
+    :target: https://github.com/ambv/black
 
 
 
