@@ -10,6 +10,7 @@ from tests.factories import RequestMockResponse
 from tests.mock_responses import (
     AUTH_ERROR,
     GET_PROJECTS,
+    GET_TASKS,
     GET_USER,
     GET_WORKSPACES,
     POST_TIME_ENTRY,
@@ -30,7 +31,7 @@ def test_api_key_missing(mock_requests, a_server):
 
 
 @pytest.mark.parametrize(
-    "mock_response", [GET_WORKSPACES, GET_USER, GET_PROJECTS],
+    "mock_response", [GET_WORKSPACES, GET_USER, GET_PROJECTS, GET_TASKS],
 )
 def test_get_ok(mock_requests, a_server, mock_response):
     """No exceptions should be raised by normal calls"""

@@ -66,10 +66,17 @@ GET_PROJECTS = RequestMockResponse(
     200,
 )
 
+# calling /workspaces/<workspace id>/projects/{projectId}/tasks
+GET_TASKS = RequestMockResponse(
+    """[{"assigneeIds":["593e40aab0798735d0392a2d"],"estimate":"PT0S","id":"5b1e6b160cb8793dd93ec120",
+    "name":"Task1","projectId":"5b1667790cb8797321f3d664","billable":"true","status":"ACTIVE"}]""",
+    200,
+)
+
 # calling post '/workspaces/<workspace id>/time-entries'
 POST_TIME_ENTRY = RequestMockResponse(
     """{"id": "123456", "description": "testing description", "tagIds": null,
- "userId": "123456", "billable": false, "taskId": null, "projectId": "123456",
+ "userId": "123456", "billable": false, "taskId": "123456", "projectId": "123456",
  "timeInterval": {"start": "2019-10-23T17:18:58Z", "end": null, "duration": null},
  "workspaceId": "123456", "isLocked": false}
  """,
