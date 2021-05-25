@@ -26,8 +26,6 @@ Python client for the Clockify web API
 
 
 * Free software: GNU General Public License v3
-* Documentation: https://clockify-api-client.readthedocs.io.
-
 
 Features
 --------
