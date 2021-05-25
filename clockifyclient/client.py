@@ -5,6 +5,7 @@ from typing import Generator, List, Optional
 
 from clockifyclient.api import APIServer, APIServer404
 from clockifyclient.models import (
+    Task,
     TimeEntryQuery,
     Workspace,
     User,
@@ -49,6 +50,14 @@ class APISession:
     def get_projects(self):
         return self.api.get_projects(
             api_key=self.api_key, workspace=self.get_default_workspace()
+        )
+
+    @lru_cache()
+    def get_tasks(self, project: Project):
+        return self.api.get_tasks(
+            api_key=self.api_key,
+            workspace=self.get_default_workspace(),
+            project=project,
         )
 
     def add_time_entries(self, entries: List[TimeEntry]):
@@ -244,6 +253,29 @@ class ClockifyAPI:
             path=f"/workspaces/{workspace.obj_id}/projects", api_key=api_key
         )
         return [Project.init_from_dict(x) for x in response]
+
+    def get_tasks(self, api_key: str, workspace: Workspace, project: Project):
+        """Get all tasks for given workspace and project
+
+        Parameters
+        ----------
+        api_key: str
+            Clockify Api key
+        workspace: Workspace
+            Get projects in this workspace
+        project: Project
+            Project to retrieve tasks from
+
+        Returns
+        -------
+        List[Task]
+
+        """
+        response = self.api_server.get(
+            path=f"/workspaces/{workspace.obj_id}/projects/{project.obj_id}/tasks",
+            api_key=api_key
+        )
+        return [Task.init_from_dict(x) for x in response]
 
     def add_time_entry_object(
         self, api_key: str, workspace: Workspace, time_entry: TimeEntry

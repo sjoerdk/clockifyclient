@@ -7,10 +7,11 @@ import pytest
 
 from clockifyclient.api import APIServer, APIServerException, APIErrorResponse
 from clockifyclient.client import ClockifyAPI, APISession
-from clockifyclient.models import TimeEntry, Project, Workspace, User
+from clockifyclient.models import Task, TimeEntry, Project, Workspace, User
 from tests.mock_responses import (
     CURRENTLY_RUNNING_ENTRY_NOT_FOUND,
     GET_PROJECTS,
+    GET_TASKS,
     GET_USER,
     GET_WORKSPACES,
     POST_TIME_ENTRY,
@@ -25,6 +26,11 @@ def a_server():
 @pytest.fixture()
 def a_project():
     return Project(obj_id="1234", name="testproject")
+
+
+@pytest.fixture()
+def a_task():
+    return Task(obj_id="1234", name="testtask")
 
 
 @pytest.fixture()
@@ -55,7 +61,8 @@ def a_time_entry(a_project):
 
 
 @pytest.fixture()
-def a_mock_api(mock_requests, an_api, a_project, a_user, a_workspace, a_time_entry):
+def a_mock_api(mock_requests, an_api, a_project, a_task, a_user, a_workspace,
+               a_time_entry):
     """A ClockifyAPI that just returns default objects for all methods,
     not calling any server
 
@@ -63,6 +70,7 @@ def a_mock_api(mock_requests, an_api, a_project, a_user, a_workspace, a_time_ent
 
     mock_api = Mock(spec=ClockifyAPI)
     mock_api.get_projects.return_value = [a_project]
+    mock_api.get_tasks.return_value = [a_task]
     mock_api.get_user.return_value = a_user
     mock_api.get_workspaces.return_value = [a_workspace]
     mock_api.add_time_entry_object.return_value = a_time_entry
@@ -88,6 +96,16 @@ def test_api_calls_get(mock_requests, an_api):
     assert len(projects) == 2
     assert projects[0].name == "Project1"
     assert projects[1].obj_id == "234567"
+
+    mock_requests.set_response(GET_TASKS)
+    tasks = an_api.get_tasks(
+        api_key="mock_key",
+        workspace=workspaces[0],
+        project=projects[0]
+    )
+    assert len(tasks) == 1
+    assert tasks[0].name == "Task1"
+    assert tasks[0].obj_id == "5b1e6b160cb8793dd93ec120"
 
 
 def test_api_add_time_entry(mock_requests, an_api, a_workspace, a_time_entry):

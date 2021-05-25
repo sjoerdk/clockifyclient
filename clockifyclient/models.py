@@ -220,8 +220,26 @@ class ProjectStub(Project):
         return f"ProjectStub ({self.obj_id})"
 
 
+class Task(NamedAPIObject):
+    def __str__(self):
+        return f"Task '{self.name}' ({self.obj_id})"
+
+
+class TaskStub(Task):
+    """A task with only an id. This occurs when a task ID is returned by
+    API as part of a different query
+    """
+
+    def __init__(self, obj_id):
+        super().__init__(obj_id=obj_id, name=None)
+
+    def __str__(self):
+        return f"TaskStub ({self.obj_id})"
+
+
 class TimeEntry(APIObject):
-    def __init__(self, obj_id, start, description="", project=None, end=None):
+    def __init__(self, obj_id, start, description="", project=None, task=None,
+                 end=None):
         """
 
         Parameters
@@ -234,6 +252,8 @@ class TimeEntry(APIObject):
             Human readable description of this time entry. Defaults to empty string
         project: Project, optional
             Project associated with this entry. Defaults to None
+        task: Task, optional
+            Task associated with this entry. Defaults to None
         end: DateTime, optional
             End of time entry. Defaults to None, meaning timer mode is activated
         """
@@ -241,6 +261,7 @@ class TimeEntry(APIObject):
         self.start = start
         self.description = description
         self.project = project
+        self.task = task
         self.end = end
 
     @staticmethod
@@ -269,11 +290,19 @@ class TimeEntry(APIObject):
             project = None
         end = cls.get_datetime(dict_in=interval, key="end", default=None)
 
+        task_id = cls.get_item(dict_in=dict_in, key="taskId", default=None)
+        if task_id:
+            task = TaskStub(obj_id=task_id)
+        else:
+            task = None
+        end = cls.get_datetime(dict_in=interval, key="end", default=None)
+
         return cls(
             obj_id=obj_id,
             start=start,
             description=description,
             project=project,
+            task=task,
             end=end,
         )
 
@@ -288,6 +317,8 @@ class TimeEntry(APIObject):
             as_dict["end"] = str(ClockifyDatetime(self.end))
         if self.project:
             as_dict["projectId"] = self.project.obj_id
+        if self.task:
+            as_dict["taskId"] = self.task.obj_id
 
         return {x: y for x, y in as_dict.items() if y}  # remove items with None value
 

@@ -6,6 +6,8 @@ import dateutil
 import pytest
 
 from clockifyclient.models import (
+    Task,
+    TaskStub,
     TimeEntry,
     User,
     Project,
@@ -36,6 +38,7 @@ def test_time_entry_from_dict(mock_models_timezone):
     assert time_entry_dict_again["start"] == "2019-10-23T17:18:58Z"
     assert time_entry_dict_again["description"] == "testing description"
     assert time_entry_dict_again["projectId"] == "123456"
+    assert time_entry_dict_again["taskId"] == "123456"
 
 
 def test_time_entry(a_date):
@@ -78,6 +81,8 @@ def test_str(a_date):
     str(User(obj_id="123", name="test"))
     str(Project(obj_id="123", name="test"))
     str(ProjectStub(obj_id="123"))
+    str(Task(obj_id="123", name="test"))
+    str(TaskStub(obj_id="123"))
     str(Workspace(obj_id="123", name="test"))
     str(APIObject(obj_id="123"))
     str(NamedAPIObject(obj_id="123", name="test"))
