@@ -9,6 +9,7 @@ from clockifyclient.models import (
     Task,
     TaskStub,
     TimeEntry,
+    TimeEntryQuery,
     User,
     Project,
     Workspace,
@@ -87,8 +88,8 @@ def test_str(a_date):
     str(Workspace(obj_id="123", name="test"))
     str(APIObject(obj_id="123"))
     str(NamedAPIObject(obj_id="123", name="test"))
-
     str(TimeEntry(obj_id="123", start=a_date))
+    str(TimeEntryQuery(description="test"))
 
 
 def test_truncate(a_date):
