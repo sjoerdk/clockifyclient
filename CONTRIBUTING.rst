@@ -76,18 +76,19 @@ Ready to contribute? Here's how to set up `clockify_api_client` for local develo
 
    Now you can make your changes locally.
 
-5. Install pre-commit hook::
+5. Install pre-commit hook:
 
-    This make sure any committed code will conform to flake8 and black
+This makes sure any committed code will conform to flake8 and black::
+
     $ pre-commit install
 
-    After installation any commit will trigger a check. You can also trigger a check manually
-    by running
+After installation any commit will trigger a check. You can also trigger a check manually by running::
+
     $ pre-commit              (run on all staged files)
     $ pre-commit run -a       (run on all files in repo)
 
-    If you feel flake8 is being unreasonable you can add `# noqa` at the end of a line ignore checking.
-    See the [flake8 docs](https://flake8.pycqa.org/en/3.1.1/user/ignoring-errors.html#in-line-ignoring-errors)
+If you feel flake8 is being unreasonable you can add `# noqa` at the end of a line ignore checking.
+See the `flake8 docs <https://flake8.pycqa.org/en/3.1.1/user/ignoring-errors.html#in-line-ignoring-errors>`_
 
 
 6. Commit your changes and push your branch to GitHub::
@@ -107,7 +108,7 @@ Before you submit a pull request, check that it meets these guidelines:
 2. If the pull request adds functionality, the docs should be updated. Put
    your new functionality into a function with a docstring, and add the
    feature to the list in README.rst.
-3. The pull request should work for Python 2.7, 3.5, 3.6, 3.7 and 3.8, and for PyPy. Check
+3. The pull request should work for Python 3.5, 3.6, 3.7 and 3.8, and for PyPy. Check
    https://travis-ci.org/sjoerdk/clockify_api_client/pull_requests
    and make sure that the tests pass for all supported Python versions.
 
