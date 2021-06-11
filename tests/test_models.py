@@ -17,6 +17,7 @@ from clockifyclient.models import (
     ProjectStub,
     NamedAPIObject,
     ClockifyDatetime,
+    ObjectParseException
 )
 from tests.mock_responses import POST_TIME_ENTRY, POST_TIME_ENTRY_NO_PROJECT_NO_TASK
 
@@ -34,6 +35,20 @@ def test_apiobject():
     time_entry_dict = json.loads(POST_TIME_ENTRY.text)
     api_object = APIObject.init_from_dict(time_entry_dict)
     assert api_object.obj_id == "123456"
+
+    with pytest.raises(ObjectParseException):
+        api_object.get_item(time_entry_dict, "not_a_key")
+    
+    assert api_object.get_item(time_entry_dict, "not_a_key", None) == None
+
+    with pytest.raises(ObjectParseException):
+        time_entry_dict['empty_date'] = None
+        api_object.get_datetime(time_entry_dict, "empty_date")
+
+    with pytest.raises(ObjectParseException):
+        time_entry_dict['bad_date'] = "2019-1023T18:18:A"
+        api_object.get_datetime(time_entry_dict, "bad_date")
+
 
 def test_time_entry_from_dict(mock_models_timezone):
     time_entry_dict = json.loads(POST_TIME_ENTRY.text)
