@@ -164,7 +164,6 @@ class APIObject:
         """
         return cls(
             obj_id=cls.get_item(dict_in=dict_in, key="id"),
-            name=cls.get_item(dict_in=dict_in, key="name"),
         )
 
 

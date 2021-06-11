@@ -18,7 +18,7 @@ from clockifyclient.models import (
     NamedAPIObject,
     ClockifyDatetime,
 )
-from tests.mock_responses import POST_TIME_ENTRY
+from tests.mock_responses import POST_TIME_ENTRY, POST_TIME_ENTRY_NO_PROJECT_NO_TASK
 
 
 @pytest.fixture()
@@ -30,6 +30,11 @@ def mock_models_timezone(monkeypatch):
     )
 
 
+def test_apiobject():
+    time_entry_dict = json.loads(POST_TIME_ENTRY.text)
+    api_object = APIObject.init_from_dict(time_entry_dict)
+    assert api_object.obj_id == "123456"
+
 def test_time_entry_from_dict(mock_models_timezone):
     time_entry_dict = json.loads(POST_TIME_ENTRY.text)
     time_entry = TimeEntry.init_from_dict(time_entry_dict)
@@ -40,6 +45,16 @@ def test_time_entry_from_dict(mock_models_timezone):
     assert time_entry_dict_again["description"] == "testing description"
     assert time_entry_dict_again["projectId"] == "123456"
     assert time_entry_dict_again["taskId"] == "123456"
+
+
+def test_time_entry_no_project_no_task(mock_models_timezone):
+    time_entry_dict = json.loads(POST_TIME_ENTRY_NO_PROJECT_NO_TASK.text)
+    time_entry = TimeEntry.init_from_dict(time_entry_dict)
+    assert time_entry.project == None
+    assert time_entry.task == None
+
+    time_entry_dict_again = TimeEntry.to_dict(time_entry)
+    assert time_entry_dict_again["end"] == "2019-10-23T18:18:58Z"
 
 
 def test_time_entry(a_date):

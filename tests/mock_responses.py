@@ -82,3 +82,13 @@ POST_TIME_ENTRY = RequestMockResponse(
  """,
     201,
 )
+
+# calling post '/workspaces/<workspace id>/time-entries' (no project, no task)
+POST_TIME_ENTRY_NO_PROJECT_NO_TASK = RequestMockResponse(
+    """{"id": "123456", "description": "testing description", "tagIds": null,
+ "userId": "123456", "billable": false, "taskId": null, "projectId": null,
+ "timeInterval": {"start": "2019-10-23T17:18:58Z", "end": "2019-10-23T18:18:58Z", "duration": "PT1H"},
+ "workspaceId": "123456", "isLocked": false}
+ """,
+    201,
+)
