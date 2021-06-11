@@ -76,14 +76,19 @@ Ready to contribute? Here's how to set up `clockify_api_client` for local develo
 
    Now you can make your changes locally.
 
-5. When you're done making changes, check that your changes pass flake8 and the
-   tests, including testing other Python versions with tox::
+5. Install pre-commit hook::
 
-    $ flake8 clockify_api_client tests
-    $ python setup.py test or pytest
-    $ tox
+    This make sure any committed code will conform to flake8 and black
+    $ pre-commit install
 
-   To get flake8 and tox, just pip install them into your virtualenv.
+    After installation any commit will trigger a check. You can also trigger a check manually
+    by running
+    $ pre-commit              (run on all staged files)
+    $ pre-commit run -a       (run on all files in repo)
+
+    If you feel flake8 is being unreasonable you can add `# noqa` at the end of a line ignore checking.
+    See the [flake8 docs](https://flake8.pycqa.org/en/3.1.1/user/ignoring-errors.html#in-line-ignoring-errors)
+
 
 6. Commit your changes and push your branch to GitHub::
 
