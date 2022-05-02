@@ -17,7 +17,7 @@ from clockifyclient.models import (
     ProjectStub,
     NamedAPIObject,
     ClockifyDatetime,
-    ObjectParseException
+    ObjectParseException,
 )
 from tests.mock_responses import POST_TIME_ENTRY, POST_TIME_ENTRY_NO_PROJECT_NO_TASK
 
@@ -38,15 +38,15 @@ def test_apiobject():
 
     with pytest.raises(ObjectParseException):
         api_object.get_item(time_entry_dict, "not_a_key")
-    
-    assert api_object.get_item(time_entry_dict, "not_a_key", None) == None
+
+    assert api_object.get_item(time_entry_dict, "not_a_key", None) is None
 
     with pytest.raises(ObjectParseException):
-        time_entry_dict['empty_date'] = None
+        time_entry_dict["empty_date"] = None
         api_object.get_datetime(time_entry_dict, "empty_date")
 
     with pytest.raises(ObjectParseException):
-        time_entry_dict['bad_date'] = "2019-1023T18:18:A"
+        time_entry_dict["bad_date"] = "2019-1023T18:18:A"
         api_object.get_datetime(time_entry_dict, "bad_date")
 
 
@@ -65,8 +65,8 @@ def test_time_entry_from_dict(mock_models_timezone):
 def test_time_entry_no_project_no_task(mock_models_timezone):
     time_entry_dict = json.loads(POST_TIME_ENTRY_NO_PROJECT_NO_TASK.text)
     time_entry = TimeEntry.init_from_dict(time_entry_dict)
-    assert time_entry.project == None
-    assert time_entry.task == None
+    assert time_entry.project is None
+    assert time_entry.task is None
 
     time_entry_dict_again = TimeEntry.to_dict(time_entry)
     assert time_entry_dict_again["end"] == "2019-10-23T18:18:58Z"

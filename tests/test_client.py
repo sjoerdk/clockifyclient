@@ -61,8 +61,9 @@ def a_time_entry(a_project):
 
 
 @pytest.fixture()
-def a_mock_api(mock_requests, an_api, a_project, a_task, a_user, a_workspace,
-               a_time_entry):
+def a_mock_api(
+    mock_requests, an_api, a_project, a_task, a_user, a_workspace, a_time_entry
+):
     """A ClockifyAPI that just returns default objects for all methods,
     not calling any server
 
@@ -99,9 +100,7 @@ def test_api_calls_get(mock_requests, an_api):
 
     mock_requests.set_response(GET_TASKS)
     tasks = an_api.get_tasks(
-        api_key="mock_key",
-        workspace=workspaces[0],
-        project=projects[0]
+        api_key="mock_key", workspace=workspaces[0], project=projects[0]
     )
     assert len(tasks) == 1
     assert tasks[0].name == "Task1"
