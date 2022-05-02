@@ -273,7 +273,7 @@ class ClockifyAPI:
         """
         response = self.api_server.get(
             path=f"/workspaces/{workspace.obj_id}/projects/{project.obj_id}/tasks",
-            api_key=api_key
+            api_key=api_key,
         )
         return [Task.init_from_dict(x) for x in response]
 

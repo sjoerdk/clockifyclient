@@ -97,10 +97,10 @@ class APIObject:
         """
         try:
             return dict_in[key]
-        except KeyError:
+        except KeyError as e:
             if default == NOT_SET:
                 msg = f"Could not find key '{key}' in '{dict_in}'"
-                raise ObjectParseException(msg)
+                raise ObjectParseException(msg) from e
             else:
                 return default
 
@@ -140,7 +140,7 @@ class APIObject:
             return ClockifyDatetime.init_from_string(date_str).datetime
         except ValueError as e:
             msg = f"Error parsing {date_str} to datetime: '{e}'"
-            raise ObjectParseException(msg)
+            raise ObjectParseException(msg) from e
 
     @classmethod
     def init_from_dict(cls, dict_in):
@@ -162,9 +162,7 @@ class APIObject:
         instance of this class, initialized to the values in dict_in
 
         """
-        return cls(
-            obj_id=cls.get_item(dict_in=dict_in, key="id"),
-        )
+        return cls(obj_id=cls.get_item(dict_in=dict_in, key="id"),)
 
 
 class NamedAPIObject(APIObject):
@@ -237,8 +235,9 @@ class TaskStub(Task):
 
 
 class TimeEntry(APIObject):
-    def __init__(self, obj_id, start, description="", project=None, task=None,
-                 end=None):
+    def __init__(
+        self, obj_id, start, description="", project=None, task=None, end=None
+    ):
         """
 
         Parameters
